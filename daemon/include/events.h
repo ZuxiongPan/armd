@@ -1,4 +1,0 @@
-#pragma once
-
-#define EV_TYPE_SYSTEM 0x00000000
-#define EV_MONITOR_ALIVE (EV_TYPE_SYSTEM + 0x0001)

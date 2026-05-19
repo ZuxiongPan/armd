@@ -1,3 +1,4 @@
 A simple linux C daemon program
 
 lib/cJSON use part code of https://github.com/DaveGamble/cJSON
+lib/libuv use part code of https://github.com/libuv/libuv
