@@ -39,7 +39,7 @@ int main(int argc, const char *argv[])
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", ARMD_SOCKET_PATH);
+    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", ARMD_UNIX_SOCKET_PATH);
 
     if(sendto(fd, message, strlen(message), 0, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {

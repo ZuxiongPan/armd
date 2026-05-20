@@ -5,63 +5,21 @@
 #include <stdbool.h>
 
 #include <sys/epoll.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #include "armd_event_loop.h"
 #include "armd_log.h"
 #include "armd_comm.h"
 
+typedef struct armd_event_src {
+    int fd;
+    armd_event_cb cb;
+    void *arg;
+} armd_event_src_t;
+
 static int g_epfd = -1;
-static int g_sockfd = -1;
-
-static int create_unix_socket(void)
-{
-    struct sockaddr_un addr;
-    int fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if(fd < 0)
-    {
-        armd_log("create unix socket failed, errno: %d\n", errno);
-        return -1;
-    }
-
-    unlink(ARMD_SOCKET_PATH);
-
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", ARMD_SOCKET_PATH);
-    if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        armd_log("bind unix socket failed, errno: %d\n", errno);
-        close(fd);
-        return -1;
-    }
-
-    return fd;
-}
-
-static void socket_event_handler(void)
-{
-    char buffer[1024] = { 0 };
-
-    ssize_t len = recvfrom(g_sockfd, buffer, sizeof(buffer) - 1, 0, NULL, NULL);
-    if(len < 0)
-    {
-        armd_log("recv failed, errno: %d\n", errno);
-        return ;
-    }
-
-    buffer[len] = '\0';
-    armd_log("recv: %s\n", buffer);
-
-    return ;
-}
 
 int armd_event_loop_init(void)
 {
-    struct epoll_event ev;
-    memset(&ev, 0, sizeof(ev));
-
     g_epfd = epoll_create1(EPOLL_CLOEXEC);
     if(g_epfd < 0)
     {
@@ -69,22 +27,33 @@ int armd_event_loop_init(void)
         return -1;
     }
 
-    g_sockfd = create_unix_socket();
-    if(g_sockfd < 0)
+    armd_log("event loop init success\n");
+    return 0;
+}
+
+int armd_event_loop_add(int fd, uint32_t event, armd_event_cb cb, void *arg)
+{
+    struct epoll_event ev;
+    memset(&ev, 0, sizeof(ev));
+
+    armd_event_src_t *src = (armd_event_src_t *)malloc(sizeof(armd_event_src_t));
+    if(NULL == src)
     {
-        armd_log("create unix socket failed, errno: %d\n", errno);
+        armd_log("malloc failed, errno: %d\n", errno);
         return -1;
     }
 
-    ev.events = EPOLLIN;
-    ev.data.fd = g_sockfd;
-    if(epoll_ctl(g_epfd, EPOLL_CTL_ADD, g_sockfd, &ev) < 0)
+    src->fd = fd;
+    src->cb = cb;
+    src->arg = arg;
+    ev.data.ptr = src;
+    ev.events = event;
+    if(epoll_ctl(g_epfd, EPOLL_CTL_ADD, fd, &ev) < 0)
     {
         armd_log("epoll_ctl failed, errno: %d\n", errno);
+        free(src);
         return -1;
     }
-
-    armd_log("event loop init success\n");
 
     return 0;
 }
@@ -109,15 +78,16 @@ void armd_event_loop_run(void)
             armd_log("epoll_wait failed, errno: %d\n", errno);
             break;
         }
-        else
+
+        for(int i = 0; i < nfds; i++)
         {
-            for(int i = 0; i < nfds; i++)
+            armd_event_src_t *src = (armd_event_src_t *)events[i].data.ptr;
+            if(NULL == src || NULL == src->cb)
             {
-                if(events[i].data.fd == g_sockfd)
-                {
-                    socket_event_handler();
-                }
+                armd_log("src is null\n");
+                continue;
             }
+            src->cb(src->fd, events[i].events, src->arg);
         }
     }
 
@@ -126,16 +96,9 @@ void armd_event_loop_run(void)
 
 void armd_event_loop_exit(void)
 {
-    if(g_sockfd >= 0)
-    {
-        close(g_sockfd);
-        unlink(ARMD_SOCKET_PATH);
-    }
-
     if(g_epfd >= 0)
     {
         close(g_epfd);
-
     }
 
     armd_log("event loop exit success\n");
