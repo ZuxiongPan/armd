@@ -8,9 +8,11 @@
 #include "armd_timer.h"
 #include "armd_unix_socket.h"
 #include "armd_comm.h"
+#include "armd_uevent.h"
 
 static int timerfd = -1;
 static int sockfd = -1;
+static int ueventfd = -1;
 
 int main(int argc, const char *argv[])
 {
@@ -46,11 +48,24 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
+    ueventfd = armd_uevent_create();
+    if(ueventfd < 0)
+    {
+        armd_log("create uevent socket failed, errno: %d\n", errno);
+    }
+    else if(armd_event_loop_add(ueventfd, EPOLLIN, armd_uevent_cb, NULL) < 0)
+    {
+        armd_log("add uevent socket to event loop failed, errno: %d\n", errno);
+        close(ueventfd);
+        ueventfd = -1;
+    }
+
     armd_event_loop_run();
 
     armd_event_loop_exit();
 
     close(sockfd);
+    if(ueventfd >= 0) close(ueventfd);
     close(timerfd);
     return 0;
 }

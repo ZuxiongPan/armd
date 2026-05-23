@@ -1,4 +1,4 @@
-CC := gcc
+CC ?= gcc
 
 CFLAGS := -Wall -O2 -I./include -std=c11 -D_GNU_SOURCE
 LDFLAGS := 
@@ -6,6 +6,7 @@ LDFLAGS :=
 OBJS-y := core/armd_event_loop.o \
 	core/armd_timer.o \
 	core/armd_unix_socket.o \
+	core/armd_uevent.o \
 	init/main.o
 
 TARGET := armd
