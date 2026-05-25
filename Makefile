@@ -7,6 +7,7 @@ OBJS-y := core/armd_event_loop.o \
 	core/armd_timer.o \
 	core/armd_unix_socket.o \
 	core/armd_uevent.o \
+	modules/block_mgr.o \
 	init/main.o
 
 TARGET := armd

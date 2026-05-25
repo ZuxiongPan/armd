@@ -42,7 +42,7 @@ void armd_timer_cb(int fd, uint32_t event, void *arg)
 
     ssize_t ret = read(fd, &value, sizeof(value));
     (void)ret;
-    armd_log("timerfd %d expired, value: %lu\n", fd, value);
+    //armd_log("timerfd %d expired, value: %lu\n", fd, value);
 
     return ;
 }
