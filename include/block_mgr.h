@@ -14,8 +14,6 @@
 
 #include "armd_uevent.h"
 
-uint32_t get_filesystem_type(const char *devpath);
-const char* get_mount_filesystem_string(uint32_t fs_type);
 int block_device_handler(const uevent_info_t *uevent_info);
 
 #endif

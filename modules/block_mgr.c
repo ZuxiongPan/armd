@@ -16,7 +16,7 @@ const static char *ntfs_mounted_name = "ntfs";
 const static char *vfat_mounted_name = "vfat";
 const static char *invalid_mounted_name = "unknown";
 
-uint32_t get_filesystem_type(const char *devpath)
+static uint32_t get_filesystem_type(const char *devpath)
 {
     if(NULL == devpath)
     {
@@ -63,7 +63,7 @@ uint32_t get_filesystem_type(const char *devpath)
     return (ret & FS_SUPPORTED ? ret : FS_UNKNOWN);
 }
 
-const char* get_mount_filesystem_string(uint32_t fs_type)
+static const char* get_mount_filesystem_string(uint32_t fs_type)
 {
     const char *ret = invalid_mounted_name;
 
