@@ -110,7 +110,7 @@ int block_device_handler(const uevent_info_t *uevent_info)
     }
     else if(strncmp(uevent_info->action, "remove", 6) == 0)
     {
-        armd_log("receive a remove event\n");
+        return umount("/mnt");
     }
 
     return 0;

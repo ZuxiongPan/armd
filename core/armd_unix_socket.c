@@ -47,7 +47,7 @@ void armd_unix_socket_cb(int fd, uint32_t event, void *arg)
     }
 
     buffer[len] = '\0';
-    armd_log("recvfrom %s\n", buffer);
+    armd_log("receive message [%s]\n", buffer);
 
     return ;
 }
