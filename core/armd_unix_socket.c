@@ -6,6 +6,7 @@
 #include <sys/un.h>
 
 #include "armd_unix_socket.h"
+#include "armd_comm.h"
 #include "armd_log.h"
 
 int armd_unix_socket_create(const char *path)
@@ -36,7 +37,7 @@ int armd_unix_socket_create(const char *path)
 
 void armd_unix_socket_cb(int fd, uint32_t event, void *arg)
 {
-    char buffer[ARMD_UNIX_SOCKET_BUF_SIZE];
+    char buffer[ARMD_JSON_MSG_MAX_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
     ssize_t len = recvfrom(fd, buffer, sizeof(buffer) - 1, 0, NULL, NULL);
@@ -47,7 +48,7 @@ void armd_unix_socket_cb(int fd, uint32_t event, void *arg)
     }
 
     buffer[len] = '\0';
-    armd_log("receive message [%s]\n", buffer);
+    armd_log("receive message %s\n", buffer);
 
     return ;
 }
