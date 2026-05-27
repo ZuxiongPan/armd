@@ -8,6 +8,9 @@
 #include "armd_unix_socket.h"
 #include "armd_comm.h"
 #include "armd_log.h"
+#include "ver_mgr.h"
+
+#include "cJSON/cJSON.h"
 
 int armd_unix_socket_create(const char *path)
 {
@@ -49,6 +52,45 @@ void armd_unix_socket_cb(int fd, uint32_t event, void *arg)
 
     buffer[len] = '\0';
     armd_log("receive message %s\n", buffer);
+
+    cJSON *json = cJSON_Parse(buffer);
+    if(NULL == json)
+    {
+        armd_log("parse json failed\n");
+        return ;
+    }
+
+    cJSON *type = cJSON_GetObjectItem(json, "type");
+    if(NULL == type)
+    {
+        armd_log("type not found\n");
+        cJSON_Delete(json);
+        return ;
+    }
+
+    cJSON *table = cJSON_GetObjectItem(json, "table");
+    if(NULL == table)
+    {
+        armd_log("table not found\n");
+        cJSON_Delete(json);
+        return ;
+    }
+
+    if(strncmp(type->valuestring, "get", 3) == 0 && strncmp(table->valuestring, "version", 7) == 0)
+    {
+        get_armd_ver_json(buffer, sizeof(buffer));
+        armd_log("get %s %s\n", table->valuestring, buffer);
+    }
+    else if(strncmp(type->valuestring, "set", 3) == 0 && strncmp(table->valuestring, "version", 7) == 0)
+    {
+        set_armd_ver_json(buffer, sizeof(buffer));
+    }
+    else
+    {
+        armd_log("unknown type %s or table %s\n", type->valuestring, table->valuestring);
+    }
+
+    cJSON_Delete(json);
 
     return ;
 }

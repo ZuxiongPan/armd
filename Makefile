@@ -8,6 +8,7 @@ OBJS-y := core/armd_event_loop.o \
 	core/armd_unix_socket.o \
 	core/armd_uevent.o \
 	modules/block_mgr.o \
+	modules/ver_mgr.o \
 	3rd_party/cJSON/cJSON.o \
 	init/main.o
 

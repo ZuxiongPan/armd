@@ -16,15 +16,16 @@ static inline void usage(void)
     printf("sendcmd [target] [type] \'message\'\n");
     printf("\ttarget: armd\n");
     printf("\ttype: get/set\n");
-    printf("\tmessage: [name1] [value1] [name2] [value2] [...]\n");
+    printf("\tmessage: [table] [name1] [value1] [name2] [value2] [...]\n");
     printf("\tif get, value is forbidden\n");
 }
 
-static bool prepare_json_message(char *msg_buf, int bufsize, const char *target, const char *type, int argc, const char *argv[]);
+static bool prepare_json_message(char *msg_buf, int bufsize, const char *target, const char *type, \
+        const char *table, int argc, const char *argv[]);
 
 int main(int argc, const char *argv[])
 {
-    if(argc < 3 || strncmp(argv[1], "armd", 4) != 0)
+    if(argc < 4 || strncmp(argv[1], "armd", 4) != 0)
     {
         usage();
         return -1;
@@ -37,8 +38,9 @@ int main(int argc, const char *argv[])
     memset(&addr, 0, sizeof(addr));
     const char *target = argv[1];
     const char *type = argv[2];
+    const char *table = argv[3];
 
-    if(!prepare_json_message(message, ARMD_JSON_MSG_MAX_SIZE, target, type, argc - 3, argv + 3))
+    if(!prepare_json_message(message, ARMD_JSON_MSG_MAX_SIZE, target, type, table, argc - 4, argv + 4))
     {
         printf("json message prepare failed\n");
         return -1;
@@ -67,7 +69,8 @@ int main(int argc, const char *argv[])
     return 0;
 }
 
-static bool prepare_json_message(char *msg_buf, int bufsize, const char *target, const char *type, int argc, const char *argv[])
+static bool prepare_json_message(char *msg_buf, int bufsize, const char *target, const char *type, \
+        const char *table, int argc, const char *argv[])
 {
     cJSON *root = cJSON_CreateObject();
     cJSON *params = NULL;
@@ -78,21 +81,29 @@ static bool prepare_json_message(char *msg_buf, int bufsize, const char *target,
     
     cJSON_AddStringToObject(root, "target", target);
     cJSON_AddStringToObject(root, "type", type);
+    cJSON_AddStringToObject(root, "table", table);
 
-    if(argc > 0 && strncmp(type, "get", 3) == 0)
+    if(strncmp(type, "get", 3) == 0)
     {
-        params = cJSON_CreateArray();
-        if(NULL == params)
+        if(argc != 0)
         {
-            cJSON_Delete(root);
-            return false;
-        }
-        for(int i = 0; i < argc; i++)
-        {
-            cJSON_AddItemToArray(params, cJSON_CreateString(argv[i]));
-        }
+            params = cJSON_CreateArray();
+            if(NULL == params)
+            {
+                cJSON_Delete(root);
+                return false;
+            }
+            for(int i = 0; i < argc; i++)
+            {
+                cJSON_AddItemToArray(params, cJSON_CreateString(argv[i]));
+            }
 
-        cJSON_AddItemToObject(root, "params", params);
+            cJSON_AddItemToObject(root, "params", params);
+        }
+        else
+        {
+            printf("get all info from %s\n", table);
+        }
     }
     else if(argc > 0 && strncmp(type, "set", 3) == 0 && argc % 2 == 0)
     {
@@ -102,6 +113,7 @@ static bool prepare_json_message(char *msg_buf, int bufsize, const char *target,
             cJSON_Delete(root);
             return false;
         }
+        
         for(int i = 0; i < argc; i += 2)
         {
             cJSON_AddStringToObject(params, argv[i], argv[i + 1]);
